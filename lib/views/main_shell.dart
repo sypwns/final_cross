@@ -5,6 +5,7 @@ import 'login_screen.dart';
 import 'dashboard_view.dart';
 import 'tasks_view.dart';
 import 'calendar_view.dart';
+import 'focus_view.dart';
 import 'notes_view.dart';
 import 'profile_view.dart';
 
@@ -22,21 +23,22 @@ class _MainShellState extends State<MainShell> {
     DashboardView(),
     TasksView(),
     CalendarView(),
+    FocusView(),
     NotesView(),
     ProfileView(),
   ];
 
   Future<void> logout() async {
-  await FirebaseAuth.instance.signOut();
+    await FirebaseAuth.instance.signOut();
 
-  if (!mounted) return;
+    if (!mounted) return;
 
-  Navigator.pushAndRemoveUntil(
-    context,
-    MaterialPageRoute(builder: (_) => const LoginScreen()),
-    (route) => false,
-  );
-}
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,12 +52,10 @@ class _MainShellState extends State<MainShell> {
           ),
         ],
       ),
-
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 250),
         child: pages[index],
       ),
-
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
         onDestinationSelected: (value) {
@@ -78,6 +78,11 @@ class _MainShellState extends State<MainShell> {
             icon: Icon(Icons.calendar_month_outlined),
             selectedIcon: Icon(Icons.calendar_month),
             label: 'Calendar',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.timer_outlined),
+            selectedIcon: Icon(Icons.timer),
+            label: 'Focus',
           ),
           NavigationDestination(
             icon: Icon(Icons.note_alt_outlined),

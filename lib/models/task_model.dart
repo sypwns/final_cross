@@ -1,11 +1,11 @@
 class StudyTask {
-   int? id;
-   String title;
-   String description;
-   DateTime deadline;
-   String priority;
-   bool isCompleted;
-   DateTime createdAt;
+  String? id;
+  String title;
+  String description;
+  DateTime deadline;
+  String priority;
+  bool isCompleted;
+  DateTime createdAt;
 
   StudyTask({
     this.id,
@@ -18,7 +18,7 @@ class StudyTask {
   });
 
   StudyTask copyWith({
-    int? id,
+    String? id,
     String? title,
     String? description,
     DateTime? deadline,
@@ -39,24 +39,23 @@ class StudyTask {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'title': title,
       'description': description,
       'deadline': deadline.toIso8601String(),
       'priority': priority,
-      'isCompleted': isCompleted ? 1 : 0,
+      'isCompleted': isCompleted,
       'createdAt': createdAt.toIso8601String(),
     };
   }
 
   factory StudyTask.fromMap(Map<String, dynamic> map) {
     return StudyTask(
-      id: map['id'] as int?,
+      id: map['id']?.toString(),
       title: map['title'] as String,
       description: map['description'] as String,
       deadline: DateTime.parse(map['deadline'] as String),
       priority: map['priority'] as String,
-      isCompleted: (map['isCompleted'] as int) == 1,
+      isCompleted: map['isCompleted'] == true,
       createdAt: DateTime.parse(map['createdAt'] as String),
     );
   }
