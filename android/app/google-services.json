@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "257229752951",
+    "project_id": "final--cross1",
+    "storage_bucket": "final--cross1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:257229752951:android:0ea329068f6cd3541b9472",
+        "android_client_info": {
+          "package_name": "com.example.smart_study_planner"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA653xL7NwsJIxkU2FNZZ0j4PBTxFoJoJg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
