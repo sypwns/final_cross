@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'main_shell.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
-
-  static final Map<String, String> users = {};
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -16,54 +15,49 @@ class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   bool obscure = true;
+  bool loading = false;
 
-  void login() {
-    if (_formKey.currentState!.validate()) {
-      final email = emailController.text.trim();
-      final password = passwordController.text.trim();
+  Future<void> login() async {
+    if (!_formKey.currentState!.validate()) return;
 
-      if (!LoginScreen.users.containsKey(email)) {
-       ScaffoldMessenger.of(context).showSnackBar(
-  const SnackBar(
-    backgroundColor: Colors.red,
-    content: Text(
-      'User is not registered',
-      style: TextStyle(color: Colors.white),
-    ),
-  ),
-);
-        return;
-      }
+    setState(() => loading = true);
 
-      if (LoginScreen.users[email] != password) {
-       ScaffoldMessenger.of(context).showSnackBar(
-  const SnackBar(
-    backgroundColor: Colors.red,
-    content: Text(
-      'Incorrect password',
-      style: TextStyle(color: Colors.white),
-    ),
-  ),
-);
-        return;
-      }
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
 
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const MainShell()),
       );
+    } on FirebaseAuthException catch (e) {
+      String message = 'Login failed';
+
+      if (e.code == 'user-not-found') {
+        message = 'User is not registered';
+      } else if (e.code == 'wrong-password') {
+        message = 'Incorrect password';
+      } else if (e.code == 'invalid-email') {
+        message = 'Invalid email';
+      } else if (e.code == 'invalid-credential') {
+        message = 'Incorrect email or password';
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(backgroundColor: Colors.red, content: Text(message)),
+      );
+    } finally {
+      if (mounted) setState(() => loading = false);
     }
   }
 
   String? validatePassword(String? value) {
     if (value == null || value.isEmpty) return 'Enter password';
     if (value.length < 6) return 'Password must be at least 6 characters';
-    if (!RegExp(r'[A-Za-z]').hasMatch(value)) {
-      return 'Password must contain letters';
-    }
-    if (!RegExp(r'[0-9]').hasMatch(value)) {
-      return 'Password must contain numbers';
-    }
     return null;
   }
 
@@ -79,9 +73,10 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const Icon(Icons.school_rounded, size: 90),
                 const SizedBox(height: 20),
-                const Text('Login',
-                    style:
-                        TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+                const Text(
+                  'Login',
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 30),
 
                 TextFormField(
@@ -107,11 +102,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     labelText: 'Password',
                     prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
-                      icon: Icon(
-                          obscure ? Icons.visibility_off : Icons.visibility),
-                      onPressed: () {
-                        setState(() => obscure = !obscure);
-                      },
+                      icon: Icon(obscure ? Icons.visibility_off : Icons.visibility),
+                      onPressed: () => setState(() => obscure = !obscure),
                     ),
                     border: const OutlineInputBorder(),
                   ),
@@ -124,8 +116,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: login,
-                    child: const Text('Login'),
+                    onPressed: loading ? null : login,
+                    child: loading
+                        ? const CircularProgressIndicator()
+                        : const Text('Login'),
                   ),
                 ),
 
@@ -133,8 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                          builder: (_) => const RegisterScreen()),
+                      MaterialPageRoute(builder: (_) => const RegisterScreen()),
                     );
                   },
                   child: const Text("Don't have an account? Register"),

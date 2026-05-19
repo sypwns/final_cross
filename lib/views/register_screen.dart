@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -10,8 +11,13 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
+
+  bool loading = false;
 
   String? validatePassword(String? value) {
     if (value == null || value.isEmpty) return 'Enter password';
@@ -25,19 +31,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return null;
   }
 
-  void register() {
-    if (_formKey.currentState!.validate()) {
-      final email = emailController.text.trim();
-      final password = passwordController.text.trim();
+  Future<void> register() async {
+    if (!_formKey.currentState!.validate()) return;
 
-      if (LoginScreen.users.containsKey(email)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('This email is already registered')),
-        );
-        return;
-      }
+    setState(() => loading = true);
 
-      LoginScreen.users[email] = password;
+    try {
+      final userCredential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+
+      await userCredential.user?.updateDisplayName(nameController.text.trim());
+
+      if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Registered successfully. Please login.')),
@@ -47,6 +55,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
         context,
         MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
+    } on FirebaseAuthException catch (e) {
+      String message = 'Registration failed';
+
+      if (e.code == 'email-already-in-use') {
+        message = 'This email is already registered';
+      } else if (e.code == 'invalid-email') {
+        message = 'Invalid email';
+      } else if (e.code == 'weak-password') {
+        message = 'Password is too weak';
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(backgroundColor: Colors.red, content: Text(message)),
+      );
+    } finally {
+      if (mounted) setState(() => loading = false);
     }
   }
 
@@ -56,13 +81,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
       appBar: AppBar(
         title: const Text('Register'),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
               const Icon(Icons.person_add, size: 80),
+              const SizedBox(height: 20),
+
+              TextFormField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                  prefixIcon: Icon(Icons.person),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Enter name';
+                  }
+                  return null;
+                },
+              ),
+
               const SizedBox(height: 20),
 
               TextFormField(
@@ -86,12 +128,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Password',
                   prefixIcon: Icon(Icons.lock),
-                  helperText:
-                      'Minimum 6 characters, letters and numbers required',
+                  helperText: 'Minimum 6 characters, letters and numbers required',
                   border: OutlineInputBorder(),
                 ),
                 obscureText: true,
                 validator: validatePassword,
+              ),
+
+              const SizedBox(height: 20),
+
+              TextFormField(
+                controller: confirmPasswordController,
+                decoration: const InputDecoration(
+                  labelText: 'Confirm Password',
+                  prefixIcon: Icon(Icons.lock_outline),
+                  border: OutlineInputBorder(),
+                ),
+                obscureText: true,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Confirm password';
+                  if (value != passwordController.text) {
+                    return 'Passwords do not match';
+                  }
+                  return null;
+                },
               ),
 
               const SizedBox(height: 30),
@@ -100,8 +160,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: register,
-                  child: const Text('Register'),
+                  onPressed: loading ? null : register,
+                  child: loading
+                      ? const CircularProgressIndicator()
+                      : const Text('Register'),
                 ),
               ),
             ],
